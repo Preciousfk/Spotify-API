@@ -18,20 +18,67 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
                                                scope=scope))
 
 # Function to search playlists by keyword
+# def search_playlists(keyword, limit=50, offset=0):
+#     results = sp.search(q=keyword, type='playlist', limit=limit, offset=offset)
+#     playlists = []
+#     for playlist in results['playlists']['items']:
+#         if playlist and 'name' in playlist:  # ✅ Check for valid playlist object
+#             # follower_count = playlist.get('followers', {}).get('total', 0)
+#             playlists.append({
+#                 "id": playlist['id'],
+#                 "name": playlist.get('name'),
+#                 "owner": playlist['owner'].get('display_name'),
+#                 "tracks_count": playlist.get('tracks', {}).get('total', 0),
+#                 "url": playlist['external_urls'].get('spotify'),
+#                 "saves_count": playlist.get('followers', {}).get('total', 0),
+#                 "is_public": playlist.get('public', False)
+#             })
+#     return playlists
+
+# Function to search playlists by keyword
 def search_playlists(keyword, limit=50, offset=0):
+    # Perform the initial search
     results = sp.search(q=keyword, type='playlist', limit=limit, offset=offset)
     playlists = []
-    for playlist in results['playlists']['items']:
-        if playlist and 'name' in playlist:  # ✅ Check for valid playlist object
-            playlists.append({
-                "name": playlist.get('name'),
-                "owner": playlist['owner'].get('display_name'),
-                "tracks_count": playlist.get('tracks', {}).get('total', 0),
-                "url": playlist['external_urls'].get('spotify')
-            })
+    
+    for simplified_playlist in results['playlists']['items']:
+        if simplified_playlist and 'name' in simplified_playlist:
+            playlist_id = simplified_playlist['id']
+            
+            try:
+                # ⭐️ STEP 1: Fetch the full playlist object using sp.playlist()
+                # This call is required to reliably get the follower count.
+                full_playlist = sp.playlist(playlist_id)
+                
+                # ⭐️ STEP 2: Extract the follower count from the full object
+                # The 'followers' object is reliably present here.
+                follower_count = full_playlist.get('followers', {}).get('total', 0)
+                
+                playlists.append({
+                    "id": simplified_playlist['id'],
+                    "name": full_playlist.get('name'),
+                    "owner": full_playlist['owner'].get('display_name'),
+                    "tracks_count": full_playlist.get('tracks', {}).get('total', 0),
+                    "url": full_playlist['external_urls'].get('spotify'),
+                    "saves_count": follower_count,  # ✅ This will now be accurate
+                    "is_public": full_playlist.get('public', False)
+                })
+            except Exception as e:
+                # Handle API call failures (e.g., private playlist you don't have access to)
+                print(f"Warning: Could not fetch full details for playlist ID {playlist_id}. Error: {e}")
+                
+                # Append the simplified data with a default 0 for saves
+                playlists.append({
+                    "id": simplified_playlist['id'],
+                    "name": simplified_playlist.get('name'),
+                    "owner": simplified_playlist['owner'].get('display_name'),
+                    "tracks_count": simplified_playlist.get('tracks', {}).get('total', 0),
+                    "url": simplified_playlist['external_urls'].get('spotify'),
+                    "saves_count": 0, # Still 0 if the detailed fetch failed
+                    "is_public": simplified_playlist.get('public', False)
+                })
+
     return playlists
-
-
 # Collect playlists for multiple keywords
 keywords = ["African","Afro"]
 all_playlists = []
