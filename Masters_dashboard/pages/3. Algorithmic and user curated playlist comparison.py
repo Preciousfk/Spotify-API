@@ -117,7 +117,7 @@ chart = (
     )
 )
 
-st.altair_chart(chart, use_container_width=True)
+st.altair_chart(chart, width='stretch')
 
 # genre distribution comparison function within playlist types
 st.subheader("Genre exposure distribution within Algorithmic and User curated playlists")
@@ -182,7 +182,7 @@ chart = (
     title="🎼 Genre Representation: Algorithmic vs User-Curated Playlists"
 )
 
-st.altair_chart(chart, use_container_width=True)
+st.altair_chart(chart, width='stretch')
 
 
 st.subheader("Artist distribution Exposure within Algorithmic and User curated playlists")
@@ -247,7 +247,7 @@ chart = (
     title="🎤 Artist Representation: Algorithmic vs User-Curated Playlists"
 )
 
-st.altair_chart(chart, use_container_width=True)
+st.altair_chart(chart, width='stretch')
 
 
 # Chi-squared test of independence function
@@ -449,7 +449,7 @@ else:
         )
     )
 
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width='stretch')
 
 
 #Jensen-Shannon divergence function
