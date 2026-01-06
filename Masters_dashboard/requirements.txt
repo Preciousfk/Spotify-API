@@ -1,0 +1,9 @@
+streamlit
+pandas
+numpy
+altair
+plotly
+scipy
+pyodbc
+networkx
+pyvis
