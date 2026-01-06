@@ -16,24 +16,35 @@ import itertools
 # --------------------------------------------------
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.append(str(ROOT_DIR))
-CACHE_TTL = 60 * 60  # 1 hour (safe for overview metrics)
+CACHE_TTL = 60 * 60  
 
 
 from db import get_connection
+st.markdown(
+    """
+    <style>
+        .stApp {
+            background-color: #F3F7F5;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-st.title("📊 Dataset Overview & Data Quality")
+st.title("Dataset Overview & Data Quality")
 
 # --------------------------------------------------
 # Helpers
 # --------------------------------------------------
 def run_query(query: str) -> pd.DataFrame:
-    """Run a lightweight SQL query safely."""
+    """Run a lightweight SQL query safely (Streamlit-safe)."""
     try:
         with get_connection() as conn:
             return pd.read_sql(query, conn)
     except Exception as e:
         st.error(f"Database error: {e}")
         return pd.DataFrame()
+
 
 def fmt(x):
     try:
@@ -76,7 +87,7 @@ else:
 # --------------------------------------------------
 # 2️⃣ Relationship averages
 # --------------------------------------------------
-st.subheader("📈 Dataset Averages")
+st.subheader(" Dataset metrics")
 
 averages_query = """
 SELECT
@@ -105,7 +116,7 @@ else:
 # --------------------------------------------------
 # 3️⃣ Data quality checks
 # --------------------------------------------------
-st.subheader("⚠️ Data Quality Indicators")
+st.subheader("Data Quality Indicators")
 
 quality_query = """
 SELECT
@@ -163,6 +174,7 @@ AFRICA_CODES = (
     "'RW','ST','SN','SC','SL','SO','ZA','SS','SD','TZ','TG','TN','UG','ZM','ZW'"
 )
 
+
 # --------------------------------------------------
 # 1) Artists: African vs Non-African
 # --------------------------------------------------
@@ -192,7 +204,7 @@ def get_artists_africa_split() -> dict:
 
 # 1.1) Artists: African vs Non-African visualization
 
-st.subheader("👩🏾‍🎤 Artists: Total vs African")
+st.subheader("Artists: African vs non-African")
 try:
     split = get_artists_africa_split()
     pure_african_artists = int(split.get("pure_african_artists", 0) or 0)
@@ -220,9 +232,9 @@ except Exception as e:
     st.error("Failed to load African artist split data.")
     st.exception(e)
 
-# --------------------------------------------------
+
 # 2) African countries distribution
-# --------------------------------------------------
+
 
 @st.cache_data(show_spinner=True, ttl=CACHE_TTL)
 def get_african_country_distribution() -> pd.DataFrame:
@@ -239,10 +251,10 @@ def get_african_country_distribution() -> pd.DataFrame:
     """
     return run_query(query)
 
-# ----------------------------
+
 # 2.1) Country distribution among African artists (Top 10)
-# ----------------------------
-st.subheader("🌐 Top 10 Countries with most Artists in Playlist ")
+
+st.subheader("Top Countries with most Artists in Playlist ")
 try:
     dist = get_african_country_distribution()
     if dist.empty:
@@ -260,9 +272,9 @@ except Exception as e:
 
 
 
-# --------------------------------------------------
+
 # 3) Playlists with African tracks presence
-# --------------------------------------------------
+
 @st.cache_data(show_spinner=True, ttl=CACHE_TTL)
 def get_playlists_african_presence() -> dict:
     query = f"""
@@ -292,7 +304,8 @@ def get_playlists_african_presence() -> dict:
 
 
 # 3.1) Playlists with African tracks presence visualization
-st.subheader("🎧 Playlists with African Tracks (Share)")
+
+st.subheader(" Share of Playlists with African Tracks")
 try:
     pl_share = get_playlists_african_presence()
     total_playlists = int(pl_share.get("total_playlists", 0) or 0)
@@ -318,9 +331,9 @@ try:
 except Exception as e:
     st.error(f"Error fetching playlists African presence: {e}")
 
-# --------------------------------------------------
-# cross nationality collaborations
-# --------------------------------------------------
+
+# 4) cross nationality collaborations
+
 @st.cache_data(show_spinner=True, ttl=CACHE_TTL)
 def load_data():
     query = "SELECT * FROM vw_playlist_track_facts"
@@ -331,7 +344,7 @@ df_collaboration = load_data()
 
 
 def plot_cross_nationality_collaboration(df):
-    st.subheader("🤝 Cross-Nationality Collaboration Rate")
+    st.subheader(" Cross-Nationality Collaboration Rate")
 
     required_cols = {"track_id", "nationality"}
     missing = required_cols - set(df.columns)
@@ -365,9 +378,9 @@ def plot_cross_nationality_collaboration(df):
 
 plot_cross_nationality_collaboration(df_collaboration)
 
-# --------------------------------------------------
-#Release dates of tracks in the playlists
-#--------------------------------------------------
+
+# 5) Release dates of tracks in the playlists
+
 
 @st.cache_data(show_spinner=True, ttl=CACHE_TTL)
 def get_tracks_by_year() -> pd.DataFrame:
@@ -400,9 +413,9 @@ def get_african_tracks_by_year() -> pd.DataFrame:
     """
     return run_query(query)
 
-# 4.1) Tracks by Year visualization
+# 5.1) Tracks by Year visualization
 
-st.subheader("🗓️ Tracks by Year (Overall vs African)")
+st.subheader("Track Release Years (Overall vs African)")
 try:
     overall_year = get_tracks_by_year()
     african_year = get_african_tracks_by_year()
@@ -445,10 +458,10 @@ try:
 except Exception as e:
     st.error(f"Error fetching tracks by year: {e}")
 
-# --------------------------------------------------
-# Artist popularity by playlist
-#--------------------------------------------------
-st.subheader("🏆 Top 20 Artists by Playlist Presence")
+
+# 6) Artist popularity by playlist
+
+st.subheader("Top 20 Artists by Playlist Presence")
 
 @st.cache_data(show_spinner=True)
 def get_artist_popularity_top20():
@@ -466,10 +479,9 @@ def get_artist_popularity_top20():
     GROUP BY a.artist_id, a.artist_name, nationality
     ORDER BY playlists_with_artist DESC;
     """
-    conn = get_connection()
-    return pd.read_sql(query, conn)
+    return run_query(query)
 
-# 5.1) Artist popularity visualization
+# 6.1) Artist popularity visualization
 try:
     pop = get_artist_popularity_top20()
     st.dataframe(pop, width='stretch')
@@ -490,9 +502,9 @@ except Exception as e:
     st.error(f"Error fetching artist popularity: {e}")
 
 
-# --------------------------------------------------
-# Tracks per Genre (Top 20 African Genres)
-# --------------------------------------------------
+
+# 7) Tracks per Genre (Top 20 African Genres)
+
 @st.cache_data(show_spinner=True)
 def tracks_per_genre():
     query ="""With african_genres as (select genre_id,genre_name from genres where genre_name in (('afrobeats'),('afropop'),('afro r&b'),('afrobeat'),('afropiano'),('afro soul'),('afroswing'),('azonto'),('alté'),('afro adura'),('ghanaian hip hop'),('amapiano'),
@@ -506,11 +518,10 @@ join tracks t on t.track_id= tg.track_id
 group by genre_name
 order by count(t.track_id) desc;
 """
-    conn = get_connection()
-    return pd.read_sql(query, conn)
+    return run_query(query)
 
-# 6.1) Tracks per Genre visualization
-st.subheader("🎶 Tracks per Genre (Top 20 African Genres)")
+# 7.1) Tracks per Genre visualization
+st.subheader("Tracks per Genre (Top 20 African Genres)")
 try:
     tpg = tracks_per_genre()
     # st.dataframe(tpg, use_container_width=True)
@@ -529,9 +540,9 @@ try:
 except Exception as e:
     st.error(f"Error fetching tracks per genre: {e}")   
 
-# --------------------------------------------------
-# Tracks per Genre Distribution
-# --------------------------------------------------
+
+# 8) Tracks per Genre Distribution
+
 @st.cache_data(show_spinner=True)
 def genres_per_track_distribution():
     query = """
@@ -546,12 +557,12 @@ FROM counts
 GROUP BY genre_count
 ORDER BY genre_count;
     """
-    conn = get_connection()
-    return pd.read_sql(query, conn)
+    return run_query(query)
 
 
-# 7.1) Genres per Track Distribution visualization
-st.subheader("🎵 Genres per Track Distribution")
+
+# 8.1) Genres per Track Distribution visualization
+st.subheader("Genres per Track Distribution")
 try:
     gpt = genres_per_track_distribution()
     # st.dataframe(gpt, use_container_width=True)
@@ -571,25 +582,19 @@ except Exception as e:
     st.error(f"Error fetching genres per track distribution: {e}")
 
 st.subheader("Count of Unique Genre Tags per Year")
-st.markdown("""
-This dashboard tracks the **number of unique genre tags** used in tracks over time. 
-Use this to evaluate stylistic fragmentation and shifts in musical trends.
-""")
 
+# Number of Unique Genres per Year
 
 @st.cache_data(show_spinner=True, ttl=CACHE_TTL)
 def load_genre_data():
     query = "SELECT * FROM vw_playlist_genre_distribution"
-    conn = get_connection()
-    # It is safer to close the connection after reading
-    df = pd.read_sql(query, conn)
-    conn.close() 
-    return df
+    with get_connection() as conn:
+        return pd.read_sql(query, conn)
     
 try:
     df_genre = load_genre_data()
     
-    # --- FIX 1: Ensure date conversion and extract Year ---
+    # date conversion and extract Year 
     df_genre['release_date'] = pd.to_datetime(df_genre['release_date'])
     df_genre['year'] = df_genre['release_date'].dt.year
 
@@ -610,7 +615,7 @@ try:
         color_discrete_sequence=['#636EFA']
     )
     fig_bar.update_traces(textposition='outside')
-    # Use 'category' so the x-axis doesn't treat years like continuous numbers
+
     fig_bar.update_xaxes(type='category', title="Release Year") 
     
     st.plotly_chart(fig_bar, width='stretch')
@@ -619,13 +624,11 @@ try:
     col1, = st.columns(1) 
 
     with col1:
-        # --- FIX 2: Dynamic Header ---
-        # Using an f-string makes the UI more informative by showing the actual year.
+        
         latest_year = int(df_genre['year'].max())
         st.write(f"### Top 5 Genres in {latest_year}")
         
-        # --- FIX 3: Data Selection Logic ---
-        # We filter the dataframe for the latest year and get the top 5 most frequent genres.
+      
         top_genres = (
             df_genre[df_genre['year'] == latest_year]['genre_name']
             .value_counts()
@@ -633,22 +636,24 @@ try:
             .reset_index()
         )
         
-        # Rename columns for a professional display
+
         top_genres.columns = ['Genre Name', 'Total Tracks']
         
-        # --- FIX 4: Table Display ---
-        # st.table is great for static displays; st.dataframe is better if you want it sortable.
+
+
         st.table(top_genres)
 
 except Exception as e:
     st.error(f"Error processing genre data: {e}")
-    # Printing the error to the terminal is helpful for deep debugging
+
     import traceback
     print(traceback.format_exc())
     st.info("Example data format: release_date (YYYY-MM-DD), genre_name (Text)")
 
+
+
 # --------------------------------------------------
-# Interpretation (important for dissertation)
+# Interpretation 
 # --------------------------------------------------
 with st.expander("ℹ️ How to interpret this page"):
     st.markdown("""

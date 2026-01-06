@@ -4,12 +4,24 @@ import numpy as np
 import altair as alt
 from scipy.stats import chi2_contingency
 from db import get_connection
+from scipy.spatial.distance import jensenshannon
+
 
 st.set_page_config(
     page_title="Algorithmic vs User Bias — χ² Independence",
     layout="wide"
 )
 
+st.markdown(
+    """
+    <style>
+        .stApp {
+            background-color: #F3F7F5;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 st.title("🤖 Algorithmic vs User-Curated Playlists")
 st.caption("χ² Tests of Independence for Cultural Representation")
 st.markdown("""
@@ -79,9 +91,6 @@ def nationality_playlist_comparison(df, top_n=20):
 
     return agg[agg["nationality"].isin(top_nats)]
 
-
-import altair as alt
-import streamlit as st
 
 plot_df = nationality_playlist_comparison(df_nat_1, top_n=20)
 
@@ -313,7 +322,7 @@ nat_chi2 = chi2_independence(
     min_category_exposure=5
 )
 
-nat_chi2
+# nat_chi2
 
 #chi-squared test for genres
 genre_chi2 = chi2_independence(
@@ -322,7 +331,7 @@ genre_chi2 = chi2_independence(
     min_category_exposure=5
 )
 
-genre_chi2
+# genre_chi2
 
 #chi-squared test for artists
 artist_chi2 = chi2_independence(
@@ -331,10 +340,8 @@ artist_chi2 = chi2_independence(
     min_category_exposure=10
 )
 
-artist_chi2
+# artist_chi2
 
-
-import streamlit as st
 
 st.subheader("χ² Tests of Independence")
 
@@ -346,6 +353,7 @@ with c1:
         f"{nat_chi2['chi2']:.2f}",
         f"V = {nat_chi2['cramers_v']:.2f}"
     )
+    st.caption(f"result: {nat_chi2['result']}")
 
 with c2:
     st.metric(
@@ -353,6 +361,7 @@ with c2:
         f"{genre_chi2['chi2']:.2f}",
         f"V = {genre_chi2['cramers_v']:.2f}"
     )
+    st.caption(f"result: {genre_chi2['result']}")
 
 with c3:
     st.metric(
@@ -360,6 +369,7 @@ with c3:
         f"{artist_chi2['chi2']:.2f}",
         f"V = {artist_chi2['cramers_v']:.2f}"
     )
+    st.caption(f"result: {artist_chi2['result']}")
 
 
 
@@ -410,9 +420,6 @@ def artist_chi2_contributions(df, min_artist_exposure=10, top_n=20):
     return artist_contrib
 
 
-import altair as alt
-import streamlit as st
-
 artist_drivers = artist_chi2_contributions(
     df_artist_1,
     min_artist_exposure=10,
@@ -453,9 +460,7 @@ else:
 
 
 #Jensen-Shannon divergence function
-import numpy as np
-import pandas as pd
-from scipy.spatial.distance import jensenshannon
+
 
 def js_divergence(
     df,

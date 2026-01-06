@@ -7,6 +7,16 @@ from scipy.stats import chi2_contingency
 
 st.title("📊 Bias tests within User Curated Playlists")
 st.subheader("Concentration Ratios")
+st.markdown(
+    """
+    <style>
+        .stApp {
+            background-color: #F3F7F5;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # import playlist_nationality_distribution view
 @st.cache_data(show_spinner=True)
@@ -36,17 +46,16 @@ def load_artist_data():
 df_artist = load_artist_data()
 
 
-# ======================================================
 # IMPORTS
-# ======================================================
+
 import pandas as pd
 import altair as alt
 import streamlit as st
 
 
-# ======================================================
+
 # 1️⃣ GENERIC CONCENTRATION RATIO FUNCTION (CRk)
-# ======================================================
+
 
 def compute_crk(group, count_col="track_count", k=10):
     total = group[count_col].sum()
@@ -60,9 +69,9 @@ def compute_crk(group, count_col="track_count", k=10):
     )
 
 
-# ======================================================
+
 # 2️⃣ GENERIC CR10 PIPELINE (USED FOR ALL CATEGORIES)
-# ======================================================
+
 
 def compute_cr10_pipeline(
     df,
@@ -127,9 +136,9 @@ def compute_cr10_pipeline(
     return cr10_obs, CR10_expected
 
 
-# ======================================================
+
 # 3️⃣ HELPER: TOP-10 SHARE BAR CHART
-# ======================================================
+
 
 def plot_top10_bar(df, category_col, title):
     top10 = (
@@ -160,9 +169,9 @@ def plot_top10_bar(df, category_col, title):
     st.altair_chart(chart, width="stretch")
 
 
-# ======================================================
+
 # 4️⃣ NATIONALITY CR10
-# ======================================================
+
 
 cr10_nat, CR10_nat_expected = compute_cr10_pipeline(
     df_nat,
@@ -196,9 +205,9 @@ plot_df = (
     else df_nat[df_nat["playlist_name"] == selected_playlist]
 )
 
-# --------------------------------------------------
+
 # TOP-10 NATIONALITIES FOR SELECTED VIEW
-# --------------------------------------------------
+
 
 top10_nat_df = (
     plot_df
@@ -211,9 +220,8 @@ top10_nat_df = (
 total_tracks = top10_nat_df["track_count"].sum()
 top10_nat_df["share"] = top10_nat_df["track_count"] / total_tracks
 
-# --------------------------------------------------
 # INTERACTIVE BAR CHART
-# --------------------------------------------------
+
 
 chart = (
     alt.Chart(top10_nat_df)
@@ -262,12 +270,12 @@ st.dataframe(
 )
 
 
-# ======================================================
+
 # 5️⃣ GENRE CR10 (IDENTICAL STRUCTURE)
-# ======================================================
-# ======================================================
-# GENRE CR10 (ALREADY COMPUTED)
-# ======================================================
+
+
+# GENRE CR10 
+
 
 cr10_genre, CR10_genre_expected = compute_cr10_pipeline(
     df_genre,
@@ -278,9 +286,9 @@ cr10_genre, CR10_genre_expected = compute_cr10_pipeline(
 
 st.subheader("🎶 Cultural Dominance — Top 10 Genres")
 
-# --------------------------------------------------
+
 # GLOBAL CR10 KPIs (UNCHANGED)
-# --------------------------------------------------
+
 
 cols = st.columns(4)
 cols[0].metric("Mean CR10 (Observed)", f"{cr10_genre.CR10_observed.mean():.2%}")
@@ -288,9 +296,9 @@ cols[1].metric("CR10 (Expected)", f"{CR10_genre_expected:.2%}")
 cols[2].metric("Δ CR10", f"{cr10_genre.CR10_delta.mean():.2%}")
 cols[3].metric("CR10 Ratio", f"{cr10_genre.CR10_ratio.mean():.2f}×")
 
-# --------------------------------------------------
+
 # PLAYLIST SELECTOR FOR GENRE BAR CHART
-# --------------------------------------------------
+
 
 playlist_options = ["All playlists"] + sorted(
     df_genre["Playlist_name"].dropna().unique()
@@ -309,9 +317,9 @@ plot_df = (
     else df_genre[df_genre["Playlist_name"] == selected_playlist]
 )
 
-# --------------------------------------------------
+
 # TOP-10 GENRES FOR SELECTED VIEW
-# --------------------------------------------------
+
 
 top10_genre_df = (
     plot_df
@@ -324,9 +332,9 @@ top10_genre_df = (
 total_tracks = top10_genre_df["track_count"].sum()
 top10_genre_df["share"] = top10_genre_df["track_count"] / total_tracks
 
-# --------------------------------------------------
+
 # INTERACTIVE BAR CHART
-# --------------------------------------------------
+
 
 chart = (
     alt.Chart(top10_genre_df)
@@ -359,9 +367,9 @@ chart = (
 
 st.altair_chart(chart, width="stretch")
 
-# --------------------------------------------------
+
 # CR10 TABLE (UNCHANGED)
-# --------------------------------------------------
+
 
 display_genre = cr10_genre.copy()
 display_genre[["CR10_observed", "CR10_expected", "CR10_delta"]] *= 100
@@ -378,45 +386,13 @@ st.dataframe(
     width="stretch"
 )
 
-# cr10_genre, CR10_genre_expected = compute_cr10_pipeline(
-#     df_genre,
-#     category_col="genre_name",
-#     playlist_id_col="playlist_id",
-#     playlist_name_col="Playlist_name"
-# )
-
-# st.subheader("🎶 Cultural Dominance — Top 10 Genres")
-
-# cols = st.columns(4)
-# cols[0].metric("Mean CR10 (Observed)", f"{cr10_genre.CR10_observed.mean():.2%}")
-# cols[1].metric("CR10 (Expected)", f"{CR10_genre_expected:.2%}")
-# cols[2].metric("Δ CR10", f"{cr10_genre.CR10_delta.mean():.2%}")
-# cols[3].metric("CR10 Ratio", f"{cr10_genre.CR10_ratio.mean():.2f}×")
-
-# plot_top10_bar(df_genre, "genre_name", "Top 10 Genres by Track Share")
-
-# display_genre = cr10_genre.copy()
-# display_genre[["CR10_observed", "CR10_expected", "CR10_delta"]] *= 100
-# display_genre = display_genre.round(2)
-
-# st.dataframe(
-#     display_genre.rename(columns={
-#         "Playlist_name": "Playlist",
-#         "CR10_observed": "CR10 Observed (%)",
-#         "CR10_expected": "CR10 Expected (%)",
-#         "CR10_delta": "Δ CR10 (pp)",
-#         "CR10_ratio": "CR10 Ratio"
-#     }),
-#     width="stretch"
-# )
 
 
-# ======================================================
+
 # 6️⃣ ARTIST CR10 (IDENTICAL STRUCTURE)
-# ======================================================
-# ======================================================
-# ARTIST CR10 (ALREADY COMPUTED)
-# ======================================================
+
+# ARTIST CR10 
+
 
 cr10_artist, CR10_artist_expected = compute_cr10_pipeline(
     df_artist,
@@ -427,9 +403,9 @@ cr10_artist, CR10_artist_expected = compute_cr10_pipeline(
 
 st.subheader("👩🏾‍🎤 Cultural Dominance — Top 10 Artists")
 
-# --------------------------------------------------
+
 # GLOBAL CR10 KPIs (UNCHANGED)
-# --------------------------------------------------
+
 
 cols = st.columns(4)
 cols[0].metric("Mean CR10 (Observed)", f"{cr10_artist.CR10_observed.mean():.2%}")
@@ -437,9 +413,9 @@ cols[1].metric("CR10 (Expected)", f"{CR10_artist_expected:.2%}")
 cols[2].metric("Δ CR10", f"{cr10_artist.CR10_delta.mean():.2%}")
 cols[3].metric("CR10 Ratio", f"{cr10_artist.CR10_ratio.mean():.2f}×")
 
-# --------------------------------------------------
+
 # PLAYLIST SELECTOR FOR ARTIST BAR CHART
-# --------------------------------------------------
+
 
 playlist_options = ["All playlists"] + sorted(
     df_artist["playlist_name"].dropna().unique()
@@ -458,9 +434,9 @@ plot_df = (
     else df_artist[df_artist["playlist_name"] == selected_playlist]
 )
 
-# --------------------------------------------------
+
 # TOP-10 ARTISTS FOR SELECTED VIEW
-# --------------------------------------------------
+
 
 top10_artist_df = (
     plot_df
@@ -473,9 +449,9 @@ top10_artist_df = (
 total_tracks = top10_artist_df["track_count"].sum()
 top10_artist_df["share"] = top10_artist_df["track_count"] / total_tracks
 
-# --------------------------------------------------
+
 # INTERACTIVE BAR CHART
-# --------------------------------------------------
+
 
 chart = (
     alt.Chart(top10_artist_df)
@@ -508,9 +484,9 @@ chart = (
 
 st.altair_chart(chart, width="stretch")
 
-# --------------------------------------------------
+
 # CR10 TABLE (UNCHANGED)
-# --------------------------------------------------
+
 
 display_artist = cr10_artist.copy()
 display_artist[["CR10_observed", "CR10_expected", "CR10_delta"]] *= 100
@@ -527,42 +503,10 @@ st.dataframe(
     width="stretch"
 )
 
-# cr10_artist, CR10_artist_expected = compute_cr10_pipeline(
-#     df_artist,
-#     category_col="artist_name",
-#     playlist_id_col="playlist_id",   # artist table uses playlist_name only
-#     playlist_name_col="playlist_name"
-# )
-
-# st.subheader("👩🏾‍🎤 Cultural Dominance — Top 10 Artists")
-
-# cols = st.columns(4)
-# cols[0].metric("Mean CR10 (Observed)", f"{cr10_artist.CR10_observed.mean():.2%}")
-# cols[1].metric("CR10 (Expected)", f"{CR10_artist_expected:.2%}")
-# cols[2].metric("Δ CR10", f"{cr10_artist.CR10_delta.mean():.2%}")
-# cols[3].metric("CR10 Ratio", f"{cr10_artist.CR10_ratio.mean():.2f}×")
-
-# plot_top10_bar(df_artist, "artist_name", "Top 10 Artists by Track Share")
-
-# display_artist = cr10_artist.copy()
-# display_artist[["CR10_observed", "CR10_expected", "CR10_delta"]] *= 100
-# display_artist = display_artist.round(2)
-
-# st.dataframe(
-#     display_artist.rename(columns={
-#         "playlist_name": "Playlist",
-#         "CR10_observed": "CR10 Observed (%)",
-#         "CR10_expected": "CR10 Expected (%)",
-#         "CR10_delta": "Δ CR10 (pp)",
-#         "CR10_ratio": "CR10 Ratio"
-#     }),
-#     width="stretch"
-# )
 
 
-# ======================================================
 # GINI COEFFICIENT (ROBUST & CORRECT)
-# ======================================================
+
 
 def gini_coefficient(values: pd.Series) -> float:
     """
@@ -589,9 +533,9 @@ def gini_coefficient(values: pd.Series) -> float:
     return gini
 
 
-# ======================================================
+
 # BASELINE (CATALOGUE-LEVEL) GINI
-# ======================================================
+
 
 # ---------- NATIONALITY ----------
 nationality_dist = (
@@ -623,9 +567,9 @@ artist_dist = (
 gini_artist = gini_coefficient(artist_dist)
 
 
-# ======================================================
+
 # PLAYLIST-LEVEL GINI (NATIONALITIES)
-# ======================================================
+
 
 playlist_gini_nat = (
     df_nat
@@ -635,18 +579,18 @@ playlist_gini_nat = (
 )
 
 
-# ======================================================
+
 # PLAYLIST-LEVEL GINI (genres)
-# ======================================================
+
 playlist_gini_genre = (
     df_genre
     .groupby("Playlist_name")
     .apply(lambda g: gini_coefficient(g["track_count"]))
     .reset_index(name="gini_genre")
 )
-# ======================================================
+
 # PLAYLIST-LEVEL GINI (artists)
-# ======================================================
+
 playlist_gini_artists = (
     df_artist
     .groupby("playlist_name")
@@ -654,9 +598,9 @@ playlist_gini_artists = (
     .reset_index(name="gini_artist")
 )
 
-# ======================================================
+
 # STREAMLIT OUTPUT
-# ======================================================
+
 
 st.subheader("📐 Inequality Metrics (Gini Coefficient)")
 
@@ -699,9 +643,9 @@ st.dataframe(
     width="stretch"
 )
 
-# --------------------------------------------------
+
 #chi-squared homogeneity test
-#--------------------------------------------------
+
 
 from scipy.stats import chi2_contingency
 import pandas as pd
@@ -762,9 +706,9 @@ def chi2_homogeneity(
         "dof": dof
     }
 
-# --------------------------------------------------
+
 #nationality homogeneity test
-#--------------------------------------------------
+
 
 st.subheader("🌍 Nationality Homogeneity Test (χ²)")
 
@@ -786,9 +730,9 @@ else:
     st.success("✅ Fail to reject homogeneity: nationality distributions are similar")
 
 
-# --------------------------------------------------
+
 # genre homogeneity test
-# --------------------------------------------------
+
 
 st.subheader("🎼 Genre Homogeneity Test (χ²)")
 
@@ -810,9 +754,9 @@ else:
     st.success("✅ Fail to reject homogeneity: genre composition is consistent")
 
 
-# --------------------------------------------------
+
 # artist homogeneity test
-# --------------------------------------------------
+
 
 artist_result = chi2_homogeneity(
     df_artist,
@@ -833,9 +777,9 @@ else:
 
 
 
-#--------------------------------------------------
+
 #intrepretation note
-#--------------------------------------------------
+
 
 with st.expander("ℹ️ How to interpret χ² homogeneity tests"):
     st.markdown("""
@@ -852,24 +796,19 @@ by assessing **whether bias is consistent across playlists**.
 """)
 
 
-# --------------------------------------------------
-#   Chi-square Residuals Analysis
-# --------------------------------------------------
-# ============================================================
-# χ² HETEROGENEITY ANALYSIS — NATIONALITIES, GENRES, ARTISTS
-# ============================================================
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-import altair as alt
-from scipy.stats import chi2_contingency
+#   Chi-square Residuals Analysis
+
+# χ² HETEROGENEITY ANALYSIS — NATIONALITIES, GENRES, ARTISTS
+
+
+
 
 st.set_page_config(page_title="Bias Tests — χ² Heterogeneity", layout="wide")
 
-# ============================================================
+
 # GENERIC χ² HETEROGENEITY FUNCTION (NATIONALITIES / GENRES)
-# ============================================================
+
 
 def chi2_heterogeneity(
     df,
@@ -917,9 +856,9 @@ def chi2_heterogeneity(
         "residuals": residuals
     }
 
-# ============================================================
-# ARTIST χ² TEST (MATCHING OUTPUT FORMAT)
-# ============================================================
+
+# ARTIST χ² TEST 
+
 
 def chi2_artist_heterogeneity(df, min_artist_exposure=20):
     """
@@ -962,9 +901,9 @@ def chi2_artist_heterogeneity(df, min_artist_exposure=20):
         "residuals": residuals
     }
 
-# ============================================================
-# RESIDUAL DRIVER EXTRACTION (ALL ENTITIES)
-# ============================================================
+
+# RESIDUAL DRIVER EXTRACTION 
+
 
 def residual_driver_table(residuals, top_n=15, label="Category"):
     out = (
@@ -977,18 +916,11 @@ def residual_driver_table(residuals, top_n=15, label="Category"):
     out.columns = [label, "Total χ² Residual Impact"]
     return out
 
-# ============================================================
-# LOAD YOUR DATA (REPLACE WITH YOUR SQL LOADERS)
-# ============================================================
 
-# These MUST already exist:
-# df_nat   → playlist_id | nationality | track_count
-# df_genre → playlist_id | genre_name  | track_count
-# df_artist→ playlist_id | artist_name | track_count
 
-# ============================================================
+
 # NATIONALITIES
-# ============================================================
+
 
 st.header("🌍 Nationalities — χ² Heterogeneity")
 
@@ -1031,9 +963,9 @@ else:
 
     st.altair_chart(nat_chart, width='stretch')
 
-# ============================================================
+
 # GENRES
-# ============================================================
+
 
 st.header("🎼 Genres — χ² Heterogeneity")
 
@@ -1076,9 +1008,9 @@ else:
 
     st.altair_chart(genre_chart, width='stretch')
 
-# ============================================================
+
 # ARTISTS
-# ============================================================
+
 
 st.header("🎤 Artists — χ² Heterogeneity")
 
@@ -1124,3 +1056,111 @@ else:
     )
 
     st.altair_chart(artist_chart, width='stretch')
+
+
+# compute the diversity of each playlist
+#function for shannon diversity
+def shannon_diversity (counts: pd.Series) -> float:
+    proportions = counts / counts.sum()
+    proportions = proportions[proportions > 0]
+    return -np.sum(proportions * np.log(proportions))
+
+#denfine function to compute genre diversity
+def compute_genre_diversity(df_genre):
+    return (
+        df_genre
+        .groupby(["playlist_id", "Playlist_name"])
+        .apply(lambda g: shannon_diversity(g["track_count"]))
+        .reset_index(name="genre_diversity")
+        .sort_values("genre_diversity", ascending=False)
+    )
+
+#define function to compute nationality diversity
+def compute_nationality_diversity(df_nat):
+    return (
+        df_nat
+        .groupby(["playlist_id", "playlist_name"])
+        .apply(lambda g: shannon_diversity(g["track_count"]))
+        .reset_index(name="nationality_diversity")
+        .sort_values("nationality_diversity", ascending=False)
+    )
+#define function to compute artist diversity
+def compute_artist_diversity(df_artist):
+    return (
+        df_artist
+        .groupby(["playlist_id", "playlist_name"])
+        .apply(lambda g: shannon_diversity(g["track_count"]))
+        .reset_index(name="artist_diversity")
+        .sort_values("artist_diversity", ascending=False)
+    )
+
+genre_div = compute_genre_diversity(df_genre)
+nat_div = compute_nationality_diversity(df_nat)
+artist_div = compute_artist_diversity(df_artist)
+
+most_diverse_genre = genre_div.iloc[0]
+most_diverse_nat = nat_div.iloc[0]
+most_diverse_artist = artist_div.iloc[0]
+
+
+#visualize results
+st.subheader("🏆 Most Diverse Playlists")
+
+st.metric(
+    " Genre Diversity Champion",
+    most_diverse_genre["Playlist_name"],
+    f"H = {most_diverse_genre['genre_diversity']:.2f}"
+)
+
+st.metric(
+    " Nationality Diversity Champion",
+    most_diverse_nat["playlist_name"],
+    f"H = {most_diverse_nat['nationality_diversity']:.2f}"
+)
+
+st.metric(
+    " Artist Diversity Champion",
+    most_diverse_artist["playlist_name"],
+    f"H = {most_diverse_artist['artist_diversity']:.2f}"
+)
+# charts showing diversity scores across playlists
+st.subheader("🎼 Genre Diversity Across Playlists")
+
+genre_chart = (
+    alt.Chart(genre_div)
+    .mark_bar()
+    .encode(
+        x=alt.X("genre_diversity:Q", title="Shannon Diversity Index"),
+        y=alt.Y("Playlist_name:N", sort="-x", title="Playlist"),
+        tooltip=["Playlist_name", alt.Tooltip("genre_diversity:Q", format=".2f")]
+    )
+)
+
+st.altair_chart(genre_chart, use_container_width=True)
+
+
+st.subheader("🌍 Nationality Diversity Across Playlists")
+
+nat_chart = (
+    alt.Chart(nat_div)
+    .mark_bar()
+    .encode(
+        x=alt.X("nationality_diversity:Q", title="Shannon Diversity Index"),
+        y=alt.Y("playlist_name:N", sort="-x", title="Playlist"),
+        tooltip=["playlist_name", alt.Tooltip("nationality_diversity:Q", format=".2f")]
+    )
+)
+
+st.altair_chart(nat_chart, use_container_width=True)
+
+st.subheader("👩🏾‍🎤 Artist Diversity Across Playlists")
+artist_chart = (
+    alt.Chart(artist_div)
+    .mark_bar()
+    .encode(
+        x=alt.X("artist_diversity:Q", title="Shannon Diversity Index"),
+        y=alt.Y("playlist_name:N", sort="-x", title="Playlist"),
+        tooltip=["playlist_name", alt.Tooltip("artist_diversity:Q", format=".2f")]
+    )
+)
+st.altair_chart(artist_chart, use_container_width=True)
